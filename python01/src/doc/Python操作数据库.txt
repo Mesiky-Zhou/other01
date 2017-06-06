@@ -1,0 +1,147 @@
+http://www.cnblogs.com/Leo_wl/p/3288402.html
+
+python——连接Oracle数据库
+python——连接Oracle数据库
+前言
+ 
+Python自带的模块中有很多操纵文件的。我们可以把文件的数据读出来，经过处理还可以将数据写入文件中。但是对于数据的管理和分析来说，数据库还是专业一些。如果Python能和数据库结合在一起，那么就能结合两种的优势，提高效率。
+
+ 
+工作中使用的是Oracle数据库，Python有一个模块cx_Oracle可以与Oracle相连。要使用cx_Oracle，就要先下载。
+
+ 
+1. 下载cx_Oracle
+ 
+Python一个官方网站PyPI，上面有丰富的模块。cx_Oracle就可以在PyPI中下载。打开PyPI的网址https://pypi.python.org/pypi，在里面搜索cx_Oracle，即可找到该模块，其下载地址为http://cx-oracle.sourceforge.net/。当然也可以通过其它的途径下载。
+
+ 
+下载之后就可以使用了。
+
+ 
+2. 使用流程
+ 
+简单的使用流程如下：
+
+ 
+1.引用模块cx_Oracle
+2.连接数据库
+3.获取cursor
+4.使用cursor进行各种操作
+5.关闭cursor
+6.关闭连接
+
+ 
+下面是一个简单的例子：
+
+ 
+复制代码
+复制代码
+import cx_Oracle                                          #引用模块cx_Oracle
+conn=cx_Oracle.connect('load/123456@localhost/ora11g')    #连接数据库
+c=conn.cursor()                                           #获取cursor
+x=c.execute('select sysdate from dual')                   #使用cursor进行各种操作
+x.fetchone()
+c.close()                                                 #关闭cursor
+conn.close()                                              #关闭连接
+复制代码
+复制代码
+ 
+3. 几种用法
+ 
+Python对数据库的操作主要有2方面：一个是写数据，一个是读数据。这2个方面的实现可以通过SQL语句实现，也可以通过存储过程实现。所以cx_Oracle的主要用法有：
+
+ 
+1. 执行SQL语句
+
+ 
+2. 调用存储过程和函数。
+
+ 
+4. 执行SQL语句
+ 
+执行SQL语句很简单，从上面的例子就可以看出。使用cursor.execute即可执行。使用fetchone或fetchall即可将执行结果读出来。
+
+ 
+下面一个例子是Insert语句，使用的变量绑定。
+
+ 
+复制代码
+复制代码
+import cx_Oracle                                          
+conn=cx_Oracle.connect('load/123456@loaclhost/ora11g')  
+c=conn.cursor()                                         
+x=c.execute('insert into demo(v) values(:1)',['nice'])
+conn.commit();                  
+c.close()                                                 
+conn.close() 
+复制代码
+复制代码
+ 
+变量绑定和Oracle的动态SQL一样，都是冒号将占位符，即代码中的:1，对变量的复制就是传入一个List，即代码中的['nice']。有多少个变量，list中就应该对应多少个值，数目要一致，否则会报错。
+
+ 
+执行之后，可以使用连接的一个方法connect.commit()，将事务提交。
+
+ 
+5. 调用存储过程和方法
+ 
+直接上代码：
+
+ 
+复制代码
+--存储过程代码：
+CREATE OR REPLACE PROCEDURE P_DEMO(V1 IN VARCHAR2, V2 OUT VARCHAR2) IS
+BEGIN
+    V2 := V1;
+END;
+复制代码
+ 
+复制代码
+复制代码
+#Python代码：
+import cx_Oracle                                          
+conn=cx_Oracle.connect('load/123456@localhost/ora11g')  
+c=conn.cursor()   
+str1='nice'
+str2='    '#需要有值，即len(str2)>=len(str1)                                        
+x=c.callproc('p_demo',[str1,str2])
+print(str2)                   
+c.close()                                                 
+conn.close()  
+复制代码
+复制代码
+ 
+调用存储过程使用的是cursor.callproc方法。上面的存储过程中，一个变量的值是OUT型的，在Python中，对OUT型的变量赋值，主要该变量的长度不能小于存储过程中的。
+
+ 
+复制代码
+--函数代码：
+CREATE OR REPLACE function F_DEMO(V1 VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+    RETURN V1;
+END;
+复制代码
+ 
+复制代码
+复制代码
+#Python代码：
+import cx_Oracle                                          
+conn=cx_Oracle.connect('load/123456@localhost/ora11g')  
+c=conn.cursor()   
+str1='nice'                                     
+str2=c.callfunc('f_demo',cx_Oracle.STRING,[str1])
+print(str2)                   
+c.close()                                                 
+conn.close()
+复制代码
+复制代码
+ 
+调用函数使用的方法是cursor.callfunc。这个与调用存储过程不同之处在于，它需要指定传输参数的类型。
+
+ 
+结束
+ 
+通过cx_Oracle，可以是Python与Oracle数据库相互沟通，这样两者就可以长处互补。
+
+ 
+比如，可以将Python当成一个数据收集的工具，可以从Web，从文件中获取数据，然后将这些数据保存到Oracle数据库中，在Oracle数据库上进行数据的进一步分析。
